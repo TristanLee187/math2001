@@ -14,11 +14,24 @@ def c : ℕ → ℤ
   | n + 1 => 3 * c n - 10
 
 example (n : ℕ) : Odd (c n) := by
-  sorry
+  simple_induction n with k ih
+  . dsimp [c]
+    use 3
+    numbers
+  . dsimp [Odd] at *
+    obtain ⟨q, hq⟩ := ih
+    dsimp [c] at *
+    use 3*q-4
+    rw [hq]; ring
 
 --Exercise 6.2.7.2
 example (n : ℕ) : c n = 2 * 3 ^ n + 5 := by
-  sorry
+  simple_induction n with k ih
+  . dsimp [c]
+    numbers
+  . dsimp [c] at *
+    rw [ih]
+    ring
 
 --Exercise 6.2.7.3
 def y : ℕ → ℕ
@@ -26,7 +39,12 @@ def y : ℕ → ℕ
   | n + 1 => (y n) ^ 2
 
 example (n : ℕ) : y n = 2 ^ (2 ^ n) := by
-  sorry
+  simple_induction n with k ih
+  . dsimp [y]
+    numbers
+  . dsimp [y]
+    rw [ih]
+    ring
 
 --# Exercise 4
 
@@ -37,7 +55,14 @@ def b : ℕ → ℤ
   | n + 2 => 5 * b (n + 1) - 6 * b n
 
 example (n : ℕ) : b n = 3 ^ n - 2 ^ n := by
-  sorry
+  two_step_induction n with k ih1 ih2
+  . dsimp [b]
+    numbers
+  . dsimp [b]
+    numbers
+  . dsimp [b]
+    rw [ih1, ih2]
+    ring
 
 --Exercise 6.3.6.2
 def c' : ℕ → ℤ
@@ -46,7 +71,14 @@ def c' : ℕ → ℤ
   | n + 2 => 4 * c' n
 
 example (n : ℕ) : c' n = 2 * 2 ^ n + (-2) ^ n := by
-  sorry
+  two_step_induction n with k ih1 ih2
+  . dsimp [c']
+    numbers
+  . dsimp [c']
+    numbers
+  . dsimp [c']
+    rw [ih1]
+    ring
 
 --Exercise 6.3.6.3
 def t : ℕ → ℤ
@@ -55,7 +87,14 @@ def t : ℕ → ℤ
   | n + 2 => 2 * t (n + 1) - t n
 
 example (n : ℕ) : t n = 2 * n + 5 := by
-  sorry
+  two_step_induction n with k ih1 ih2
+  . dsimp [t]
+    numbers
+  . dsimp [t]
+    numbers
+  . dsimp [t]
+    rw [ih1, ih2]
+    ring
 
 --# Problem 2
 
@@ -66,7 +105,48 @@ def s : ℕ → ℤ
   | n + 2 => 2 * s (n + 1) + 3 * s n
 
 example (m : ℕ) : s m ≡ 2 [ZMOD 5] ∨ s m ≡ 3 [ZMOD 5] := by
-  sorry
+  have ss : (s m ≡ 2 [ZMOD 5] ∧ s (m+1) ≡ 3 [ZMOD 5]) ∨
+    (s m ≡ 3 [ZMOD 5] ∧ s (m+1) ≡ 2 [ZMOD 5]) := by
+      two_step_induction m with k ih1 ih2
+      . dsimp [s]
+        left
+        constructor
+        . use 0; numbers
+        . use 0; numbers
+      . dsimp [s]
+        right
+        . constructor
+          . use 0; numbers
+          . use 2; numbers
+      . obtain ⟨ih1, ih2⟩ | ⟨ih1, ih2⟩ := ih1
+        . left
+          constructor
+          . dsimp [s]
+            calc
+              2 * s (k + 1) + 3 * s k ≡ 2 * 3 + 3 * 2 [ZMOD 5] := by rel [ih1, ih2]
+              _ = 2+2*5 := by numbers
+              _ ≡ 2 [ZMOD 5] := by extra
+          . dsimp [s]
+            calc
+              2 * (2 * s (k + 1) + 3 * s k) + 3 * s (k + 1) ≡ 2*(2*3+3*2)+3*3 [ZMOD 5] := by rel [ih1, ih2]
+              _ = 3 + 6*5 := by numbers
+              _ ≡ 3 [ZMOD 5] := by extra
+        . right
+          constructor
+          . dsimp [s]
+            calc
+              2 * s (k + 1) + 3 * s k ≡ 2 * 2 + 3 * 3 [ZMOD 5] := by rel [ih1, ih2]
+              _ = 3+2*5 := by numbers
+              _ ≡ 3 [ZMOD 5] := by extra
+          . dsimp [s]
+            calc
+              2 * (2 * s (k + 1) + 3 * s k) + 3 * s (k + 1) ≡ 2*(2*2+3*3)+3*2 [ZMOD 5] := by rel [ih1, ih2]
+              _ = 2 + 6*5 := by numbers
+              _ ≡ 2 [ZMOD 5] := by extra
+  obtain ⟨a, b⟩ | ⟨c, d⟩ := ss
+  . left; exact a
+  . right; exact c
+
 
 --Exercise 6.3.6.7
 def r : ℕ → ℤ
@@ -75,4 +155,13 @@ def r : ℕ → ℤ
   | n + 2 => 2 * r (n + 1) + r n
 
 example : forall_sufficiently_large n : ℕ, r n ≥ 2 ^ n := by
-  sorry
+  use 10
+  intros x hx
+  two_step_induction_from_starting_point x, hx with k ih1 ih2 ih3
+  . dsimp [r]; numbers
+  . dsimp [r]; numbers
+  . dsimp [r]
+    calc
+      2 * r (k + 1) + r k ≥ 2 * (2^(k+1)) + 2^k := by rel [ih2, ih3]
+      _ ≥ 2 * (2^(k+1)) := by extra
+      _ = 2^(k+1+1) := by ring
